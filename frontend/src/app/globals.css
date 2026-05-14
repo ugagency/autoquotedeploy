@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+/*
+ * AutoQuote — design tokens (Tailwind 4 CSS-first).
+ * Apenas duas fontes: Space Grotesk (display) e Inter (body).
+ * Modo padrão: LIGHT. Variante .dark ativada via next-themes.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-carbon: #0d0d0d;
+  --color-amber: #e8a020;
+  --color-bone: #f5f0e8;
+
+  --font-display: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  --font-body: var(--font-inter), "Inter", sans-serif;
+}
+
+/* Bases — light é o default, .dark inverte fundo e texto */
+html,
+body {
+  background-color: #f5f0e8;
+  color: #0d0d0d;
+  font-family: var(--font-body);
+  /* color-scheme: faz controles nativos (scrollbar, date picker)
+     usarem a paleta correta em cada tema. */
+  color-scheme: light;
+}
+
+html.dark,
+html.dark body {
+  background-color: #0d0d0d;
+  color: #f5f0e8;
+  color-scheme: dark;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Ícone do calendário do input[type=date] respeita a paleta no dark */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.6);
+}
+
+/* ---------------------------------------------------------------------
+ * react-day-picker — tema AutoQuote (light + dark via variáveis CSS)
+ * ------------------------------------------------------------------- */
+.rdp-custom {
+  --rdp-accent-color: #e8a020;
+  --rdp-accent-background-color: #e8a020;
+  --rdp-selected-border: 2px solid #e8a020;
+  --rdp-today-color: #e8a020;
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 32px;
+  --rdp-day_button-width: 32px;
+  --rdp-day_button-border-radius: 6px;
+  --rdp-disabled-opacity: 0.3;
+  --rdp-outside-opacity: 0.35;
+  --rdp-weekday-opacity: 0.55;
+  --rdp-weekday-text-transform: uppercase;
+  --rdp-weekday-font: 500 0.7rem var(--font-body);
+  --rdp-nav_button-height: 28px;
+  --rdp-nav_button-width: 28px;
+  font-family: var(--font-body);
+  margin: 0;
+}
+
+/* Cores de texto seguem o tema */
+.rdp-custom .rdp-caption_label,
+.rdp-custom .rdp-day_button {
+  color: #0d0d0d;
+}
+html.dark .rdp-custom .rdp-caption_label,
+html.dark .rdp-custom .rdp-day_button {
+  color: #f5f0e8;
+}
+
+/* Botões de navegação (chevrons) */
+.rdp-custom .rdp-button_previous,
+.rdp-custom .rdp-button_next {
+  color: #0d0d0d;
+}
+html.dark .rdp-custom .rdp-button_previous,
+html.dark .rdp-custom .rdp-button_next {
+  color: #f5f0e8;
+}
+
+/* Hover dos dias */
+.rdp-custom .rdp-day_button:hover:not([disabled]):not(.rdp-selected .rdp-day_button) {
+  background-color: rgba(13, 13, 13, 0.06);
+}
+html.dark .rdp-custom .rdp-day_button:hover:not([disabled]):not(.rdp-selected .rdp-day_button) {
+  background-color: rgba(245, 240, 232, 0.08);
+}
+
+/* Dia selecionado: âmbar com texto carbon (mesmo padrão do CTA) */
+.rdp-custom .rdp-selected .rdp-day_button {
+  background-color: #e8a020;
+  color: #0d0d0d;
+  font-weight: 600;
+}
+
+/* Caption do mês (Maio 2026) com capitalização correta */
+.rdp-custom .rdp-caption_label {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}

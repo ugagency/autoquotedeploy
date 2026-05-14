@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+selenium
+webdriver-manager
+openpyxl
+supabase
+python-dotenv
+python-jose[cryptography]
+httpx

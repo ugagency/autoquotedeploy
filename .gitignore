@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------
+# AutoQuote — .gitignore raiz
+# ---------------------------------------------------------------------
+
+# ===== Segredos — NUNCA commitar =====================================
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+*.pem
+*.key
+secrets/
+
+# ===== Node / Next.js =================================================
+node_modules/
+.next/
+.next-env.d.ts
+out/
+build/
+dist/
+.vercel/
+.turbo/
+*.tsbuildinfo
+
+# ===== Python / FastAPI ==============================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ===== Selenium / robô ===============================================
+/tmp/
+*.xlsx
+chromedriver*
+geckodriver*
+
+# ===== Logs ===========================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pip-log.txt
+
+# ===== IDE / SO ======================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Claude / planos locais =======================================
+.claude/
