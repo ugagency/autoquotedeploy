@@ -37,20 +37,37 @@ export default function Dashboard({ userEmail, userId }: Props) {
   const [showSettings, setShowSettings] = useState(false);
   const [hasCredentials, setHasCredentials] = useState<boolean | null>(null);
 
-  // Ao montar: verifica se já existem credenciais Vale
+  // Ao montar: verifica credenciais Vale + retoma job em andamento (se houver)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("user_settings")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
+
+      const [{ data: cfg }, { data: jobs }] = await Promise.all([
+        supabase
+          .from("user_settings")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        // Pega o último job ainda ativo (queued/running) — re-conecta o
+        // StatusCard depois de F5. Limit 1 evita scan grande.
+        supabase
+          .from("robot_jobs")
+          .select("id, status")
+          .eq("user_id", userId)
+          .in("status", ["queued", "running"])
+          .order("created_at", { ascending: false })
+          .limit(1),
+      ]);
       if (cancelled) return;
-      const ok = !!data;
+
+      const ok = !!cfg;
       setHasCredentials(ok);
       if (!ok) setShowSettings(true);
+
+      if (jobs && jobs.length > 0) {
+        setJobId(jobs[0].id);
+      }
     })();
     return () => {
       cancelled = true;

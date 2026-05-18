@@ -6,10 +6,14 @@
 # =====================================================================
 import os
 import re
+import tempfile
 import time
 import traceback
 from datetime import datetime, date
 from typing import Callable, Optional
+
+# Diretório temporário cross-platform (/tmp no Linux, %TEMP% no Windows)
+TMP_DIR = tempfile.gettempdir()
 
 # Lista oficial de UFs do Brasil — usada na heurística de extração da UF
 ESTADOS = [
@@ -78,7 +82,7 @@ def executar_robo_vale(
 
     driver = None
     filename = f"planilha_vale_{data_coleta}.xlsx"
-    excel_path = os.path.join("/tmp", filename)
+    excel_path = os.path.join(TMP_DIR, filename)
 
     # -----------------------------------------------------------------
     # log(): único ponto de update do robot_jobs durante a execução
@@ -122,21 +126,37 @@ def executar_robo_vale(
         log(f"Data alvo: {HOJE.strftime('%d/%m/%Y')}", 8)
 
         # 3) Configuração do Selenium (headless + otimizações)
+        # SELENIUM_HEADLESS=false desabilita o headless — útil pra debugar
+        # captcha / anti-bot localmente.
+        headless = os.getenv("SELENIUM_HEADLESS", "true").lower() != "false"
         options = Options()
-        options.add_argument("--headless=new")
+        if headless:
+            options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1920,1080")
-        options.add_argument("--blink-settings=imagesEnabled=false")
+        # Em headless, desligar imagens acelera. Em modo visível, deixa carregar.
+        if headless:
+            options.add_argument("--blink-settings=imagesEnabled=false")
         options.add_argument("--disable-extensions")
+        # Reduz pegada de "automated browser" detectada por anti-bots
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
         options.page_load_strategy = "eager"
         chrome_bin = os.getenv("CHROME_BIN")
         if chrome_bin:
             options.binary_location = chrome_bin
 
+        # User-Agent realista — muitos portais detectam o headless padrão
+        options.add_argument(
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        )
         driver = webdriver.Chrome(options=options)
-        wait = WebDriverWait(driver, 15)
+        # 30s — Coupa às vezes demora pra carregar a listagem em headless
+        wait = WebDriverWait(driver, 30)
         log("Driver iniciado", 10)
 
         # 4) Login no portal
@@ -518,9 +538,50 @@ def executar_robo_vale(
 
     except Exception as e:
         traceback.print_exc()
+        tipo = type(e).__name__
+
+        # Selenium escreve mensagens em formato "Message: <texto>\nStacktrace:..."
+        # extraímos só o conteúdo útil. Se vier vazio (Timeout costuma vir vazio),
+        # usamos uma descrição funcional.
+        bruto = (str(e) or "").strip()
+        primeira_linha = ""
+        for linha in bruto.splitlines():
+            t = linha.strip()
+            if not t or t.lower().startswith("stacktrace"):
+                continue
+            # "Message: foo" → "foo"; "Message:" sozinho é vazio
+            if t.lower().startswith("message:"):
+                t = t.split(":", 1)[1].strip()
+                if not t:
+                    continue
+            primeira_linha = t
+            break
+
+        if not primeira_linha:
+            if tipo == "TimeoutException":
+                primeira_linha = (
+                    "Timeout esperando elemento da página Vale "
+                    "(login expirado, captcha, anti-bot, ou Coupa lento). "
+                    "Veja screenshot em /tmp/vale_error_*.png"
+                )
+            else:
+                primeira_linha = "erro sem mensagem"
+
+        msg_curta = f"{tipo}: {primeira_linha}"[:500]
+
+        # Tenta salvar screenshot — vital pra diagnosticar o que o robô estava vendo
+        try:
+            if driver is not None:
+                shot_path = os.path.join(TMP_DIR, f"vale_error_{job_id}.png")
+                driver.save_screenshot(shot_path)
+                url_atual = driver.current_url
+                print(f"[{_now_ts()}] screenshot salvo em {shot_path} — url: {url_atual}")
+        except Exception as shot_err:
+            print(f"[{_now_ts()}] falha ao salvar screenshot: {shot_err}")
+
         try:
             supabase_client.table("robot_jobs").update(
-                {"status": "error", "mensagem": str(e)[:500]}
+                {"status": "error", "mensagem": msg_curta}
             ).eq("id", job_id).execute()
         except Exception as upd_err:
             print(f"[{_now_ts()}] ERROR ao marcar job como error: {upd_err}")

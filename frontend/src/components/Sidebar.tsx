@@ -51,6 +51,7 @@ export default function Sidebar({ userEmail, onOpenSettings }: Props) {
           height={36}
           priority
           className="block dark:hidden h-9 w-auto"
+          style={{ width: "auto" }}
         />
         <Image
           src="/assets/logo-dark.png"
@@ -59,6 +60,7 @@ export default function Sidebar({ userEmail, onOpenSettings }: Props) {
           height={36}
           priority
           className="hidden dark:block h-9 w-auto"
+          style={{ width: "auto" }}
         />
       </div>
 

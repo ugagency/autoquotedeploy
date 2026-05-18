@@ -65,6 +65,7 @@ export default function LoginPage() {
             height={48}
             priority
             className="block dark:hidden h-12 w-auto"
+            style={{ width: "auto" }}
           />
           <Image
             src="/assets/logo-dark.png"
@@ -73,6 +74,7 @@ export default function LoginPage() {
             height={48}
             priority
             className="hidden dark:block h-12 w-auto"
+            style={{ width: "auto" }}
           />
         </div>
 

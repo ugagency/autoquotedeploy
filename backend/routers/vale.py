@@ -8,8 +8,7 @@ from db.supabase_client import get_supabase
 from models.schemas import JobStatusResponse, RunRobotRequest
 from services.vale_service import executar_robo_vale
 
-# Import tardio do get_current_user evita circularidade com main.py
-from main import get_current_user  # noqa: E402
+from auth import get_current_user
 
 router = APIRouter(tags=["vale"])
 
