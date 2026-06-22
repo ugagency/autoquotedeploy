@@ -1,44 +1,41 @@
-// =====================================================================
-// AutoQuote — Proxy /api/billing/create-portal-session → FastAPI
-// =====================================================================
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
+  apiVersion: "2025-05-28.basil",
+});
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 export async function POST() {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-    }
-
-    const backendUrl = process.env.BACKEND_URL;
-    if (!backendUrl) {
-      return NextResponse.json(
-        { error: "BACKEND_URL não configurada" },
-        { status: 500 }
-      );
-    }
-
-    const resp = await fetch(`${backendUrl}/billing/create-portal-session`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
-
-    const text = await resp.text();
-    return new NextResponse(text, {
-      status: resp.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("/api/billing/create-portal-session error:", err);
-    return NextResponse.json({ error: "Falha ao contatar o backend" }, { status: 502 });
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Stripe não configurado" }, { status: 503 });
   }
+
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  }
+
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("stripe_customer_id")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+
+  if (!sub?.stripe_customer_id) {
+    return NextResponse.json(
+      { error: "Nenhuma assinatura encontrada" },
+      { status: 404 },
+    );
+  }
+
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: sub.stripe_customer_id,
+    return_url: `${APP_URL}/billing`,
+  });
+
+  return NextResponse.json({ url: portalSession.url });
 }

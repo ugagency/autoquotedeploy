@@ -3,9 +3,10 @@
 // =====================================================================
 // AutoQuote — Landing Page pública
 // =====================================================================
+import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
   ToggleLeft,
@@ -18,10 +19,124 @@ import {
   ChevronDown,
   Download,
   TrendingUp,
+  X,
+  ArrowRight,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const WHATSAPP_URL = "https://wa.me/5531975142675";
+
+// Modal de email → checkout público
+function CheckoutModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/billing/create-checkout-session-public", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Erro ao processar. Tente novamente.");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-carbon/40 dark:bg-carbon/60 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ duration: 0.18 }}
+        className="bg-bone dark:bg-[#111] border border-carbon/15 dark:border-bone/15 rounded-xl p-7 w-full max-w-md shadow-2xl"
+      >
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h2 className="font-display font-bold text-lg text-carbon dark:text-bone">
+              Começar agora
+            </h2>
+            <p className="font-body text-sm text-carbon/60 dark:text-bone/60 mt-0.5">
+              Informe seu e-mail para ir ao pagamento.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-carbon/40 dark:text-bone/40 hover:text-carbon dark:hover:text-bone transition-colors mt-0.5"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            ref={inputRef}
+            type="email"
+            required
+            autoFocus
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            className="
+              w-full bg-carbon/5 dark:bg-bone/5
+              border border-carbon/20 dark:border-bone/20
+              text-carbon dark:text-bone placeholder:text-carbon/40 dark:placeholder:text-bone/40
+              rounded-md px-4 py-2.5 font-body text-sm
+              focus:outline-none focus:border-amber
+              transition-colors
+            "
+          />
+
+          {error && (
+            <p className="font-body text-red-600 dark:text-red-400 text-xs" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="
+              flex items-center justify-center gap-2
+              bg-amber text-carbon font-display font-bold
+              py-2.5 rounded-md
+              hover:opacity-90 disabled:opacity-50
+              transition-opacity
+            "
+          >
+            {loading ? "Aguarde..." : (
+              <>
+                Continuar para pagamento
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+
+          <p className="font-body text-xs text-carbon/40 dark:text-bone/40 text-center">
+            Você criará sua conta após o pagamento.
+          </p>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
 
 function Navbar() {
   return (
@@ -176,7 +291,7 @@ function DashboardPreview() {
   );
 }
 
-function Hero() {
+function Hero({ onAssinar }: { onAssinar: () => void }) {
   return (
     <section className="pt-36 pb-24 px-6">
       <div className="max-w-4xl mx-auto text-center">
@@ -198,14 +313,12 @@ function Hero() {
             planilha Excel em segundos — sem copiar, sem errar.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={onAssinar}
               className="font-display font-bold bg-amber text-carbon px-6 py-3 rounded hover:opacity-90 transition-opacity"
             >
-              Falar com vendas
-            </a>
+              Assinar agora
+            </button>
             <Link
               href="/login"
               className="font-display font-medium text-carbon dark:text-bone border border-carbon/20 dark:border-bone/20 px-6 py-3 rounded hover:bg-carbon/5 dark:hover:bg-bone/5 transition-colors"
@@ -451,7 +564,7 @@ const PLAN_FEATURES = [
   "Suporte dedicado",
 ];
 
-function Pricing() {
+function Pricing({ onAssinar }: { onAssinar: () => void }) {
   return (
     <section className="py-24 px-6 bg-carbon/5 dark:bg-bone/5">
       <div className="max-w-5xl mx-auto">
@@ -486,13 +599,19 @@ function Pricing() {
               </li>
             ))}
           </ul>
+          <button
+            onClick={onAssinar}
+            className="font-display font-bold bg-amber text-carbon w-full text-center py-2.5 rounded hover:opacity-90 transition-opacity"
+          >
+            Assinar agora
+          </button>
           <a
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-display font-bold bg-amber text-carbon w-full text-center py-2.5 rounded hover:opacity-90 transition-opacity"
+            className="font-display font-medium text-carbon/60 dark:text-bone/60 text-sm text-center hover:text-carbon dark:hover:text-bone transition-colors"
           >
-            Falar com vendas
+            Falar com vendas primeiro →
           </a>
         </div>
       </div>
@@ -550,16 +669,22 @@ function Footer() {
 }
 
 export default function LandingPage() {
+  const [showModal, setShowModal] = useState(false);
+
   return (
     <div className="min-h-screen bg-bone dark:bg-carbon">
       <Navbar />
       <main>
-        <Hero />
+        <Hero onAssinar={() => setShowModal(true)} />
         <HowItWorks />
         <Features />
-        <Pricing />
+        <Pricing onAssinar={() => setShowModal(true)} />
       </main>
       <Footer />
+
+      <AnimatePresence>
+        {showModal && <CheckoutModal onClose={() => setShowModal(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

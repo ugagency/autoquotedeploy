@@ -11,7 +11,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import vale as vale_router
-from routers.stripe_router import router as stripe_router
 
 load_dotenv()
 
@@ -38,7 +37,6 @@ app.add_middleware(
 
 # ----- Routers --------------------------------------------------------
 app.include_router(vale_router.router)
-app.include_router(stripe_router)
 
 
 # ----- Healthcheck ----------------------------------------------------

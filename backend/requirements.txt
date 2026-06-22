@@ -7,4 +7,3 @@ supabase
 python-dotenv
 python-jose[cryptography]
 httpx
-stripe
