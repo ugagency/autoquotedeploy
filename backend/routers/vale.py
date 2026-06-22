@@ -22,6 +22,20 @@ def run_robot(
     """Dispara o robô em background para o tenant autenticado."""
     sb = get_supabase()
 
+    # 0) Gate de assinatura: bloqueia se não houver plano ativo
+    sub = (
+        sb.table("subscriptions")
+        .select("status")
+        .eq("user_id", user_id)
+        .maybeSingle()
+        .execute()
+    )
+    if not sub.data or sub.data.get("status") not in ("active", "trialing"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Assinatura inativa. Acesse /billing para ativar seu plano.",
+        )
+
     # 1) Concorrência: bloqueia se já houver job em execução para este tenant
     em_exec = (
         sb.table("robot_jobs")

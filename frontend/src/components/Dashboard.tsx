@@ -6,6 +6,7 @@
 // Sem header superior. Tipografia: Space Grotesk (display) + Inter (body).
 // =====================================================================
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import DatePicker from "./DatePicker";
 import HistoryPanel, { type HistoryPanelHandle } from "./HistoryPanel";
@@ -14,6 +15,8 @@ import Sidebar from "./Sidebar";
 import StatusCard from "./StatusCard";
 
 type Props = { userEmail: string; userId: string };
+
+const ACTIVE_STATUSES = ["active", "trialing"];
 
 // Converte Date → DDMMAA (formato esperado pelo backend)
 function dateParaDDMMAA(d: Date): string {
@@ -26,7 +29,6 @@ function dateParaDDMMAA(d: Date): string {
 export default function Dashboard({ userEmail, userId }: Props) {
   const historyRef = useRef<HistoryPanelHandle>(null);
 
-  // Estado mantém a data como Date — só converte para DDMMAA na submissão
   const [data, setData] = useState<Date>(() => new Date());
   const [modoColeta, setModoColeta] = useState<"somente_novos" | "todos">(
     "somente_novos"
@@ -36,14 +38,15 @@ export default function Dashboard({ userEmail, userId }: Props) {
   const [erro, setErro] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [hasCredentials, setHasCredentials] = useState<boolean | null>(null);
+  const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
 
-  // Ao montar: verifica credenciais Vale + retoma job em andamento (se houver)
+  // Ao montar: verifica credenciais Vale, assinatura e retoma job em andamento
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
 
-      const [{ data: cfg }, { data: jobs }] = await Promise.all([
+      const [{ data: cfg }, { data: jobs }, { data: sub }] = await Promise.all([
         supabase
           .from("user_settings")
           .select("id")
@@ -58,12 +61,21 @@ export default function Dashboard({ userEmail, userId }: Props) {
           .in("status", ["queued", "running"])
           .order("created_at", { ascending: false })
           .limit(1),
+        supabase
+          .from("subscriptions")
+          .select("status")
+          .eq("user_id", userId)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
 
       const ok = !!cfg;
       setHasCredentials(ok);
       if (!ok) setShowSettings(true);
+
+      setSubscriptionActive(
+        !!sub && ACTIVE_STATUSES.includes(sub.status ?? "")
+      );
 
       if (jobs && jobs.length > 0) {
         setJobId(jobs[0].id);
@@ -128,6 +140,21 @@ export default function Dashboard({ userEmail, userId }: Props) {
             </p>
           </header>
 
+          {/* Banner: assinatura inativa */}
+          {subscriptionActive === false && (
+            <div className="mb-4 flex items-center justify-between gap-4 bg-amber/10 border border-amber/30 rounded-md px-4 py-3">
+              <p className="font-body text-sm text-carbon dark:text-bone">
+                Ative seu plano para usar o robô.
+              </p>
+              <Link
+                href="/billing"
+                className="font-display font-bold text-xs bg-amber text-carbon px-3 py-1.5 rounded hover:opacity-90 transition-opacity shrink-0"
+              >
+                Ver planos
+              </Link>
+            </div>
+          )}
+
           <form
             onSubmit={handleSubmit}
             className="
@@ -176,7 +203,7 @@ export default function Dashboard({ userEmail, userId }: Props) {
 
             <button
               type="submit"
-              disabled={loading || hasCredentials === false}
+              disabled={loading || hasCredentials === false || subscriptionActive === false}
               className="
                 bg-amber text-carbon
                 font-display font-bold
@@ -192,6 +219,11 @@ export default function Dashboard({ userEmail, userId }: Props) {
             {hasCredentials === false && (
               <p className="font-body text-carbon/40 dark:text-bone/40 text-xs">
                 Configure suas credenciais Vale para liberar o robô.
+              </p>
+            )}
+            {subscriptionActive === false && hasCredentials !== false && (
+              <p className="font-body text-carbon/40 dark:text-bone/40 text-xs">
+                Plano inativo — <Link href="/billing" className="underline">ative sua assinatura</Link> para continuar.
               </p>
             )}
           </form>

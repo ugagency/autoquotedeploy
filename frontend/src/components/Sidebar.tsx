@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   BarChart2,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Settings as SettingsIcon,
@@ -77,6 +78,12 @@ export default function Sidebar({ userEmail, onOpenSettings }: Props) {
           icon={<BarChart2 size={16} />}
           label="Analytics"
           active={pathname === "/analytics"}
+        />
+        <NavLink
+          href="/billing"
+          icon={<CreditCard size={16} />}
+          label="Billing"
+          active={pathname === "/billing"}
         />
         <NavButton
           icon={<SettingsIcon size={16} />}
