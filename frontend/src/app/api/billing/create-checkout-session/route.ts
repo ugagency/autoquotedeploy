@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createServiceClient } from "@/utils/supabase/service";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2025-05-28.basil",
+  apiVersion: "2026-05-27.dahlia",
 });
 
 const PRICE_ID = process.env.STRIPE_PRICE_ID ?? "";
@@ -55,7 +55,7 @@ export async function POST() {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: PRICE_ID, quantity: 1 }],
-    success_url: `${APP_URL}/billing/success`,
+    success_url: `${APP_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${APP_URL}/billing`,
     allow_promotion_codes: true,
   });

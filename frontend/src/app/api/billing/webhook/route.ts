@@ -7,7 +7,7 @@ import Stripe from "stripe";
 import { createServiceClient } from "@/utils/supabase/service";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2025-05-28.basil",
+  apiVersion: "2026-05-27.dahlia",
 });
 
 export async function POST(req: NextRequest) {
@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
       // Busca detalhes da subscription para pegar price_id e current_period_end
       const stripeSub = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = stripeSub.items.data[0]?.price.id ?? null;
-      const periodEnd = new Date(stripeSub.current_period_end * 1000).toISOString();
+      const rawEnd = (stripeSub as unknown as { current_period_end?: number }).current_period_end;
+      const periodEnd = rawEnd ? new Date(rawEnd * 1000).toISOString() : null;
 
       await sb
         .from("subscriptions")
@@ -56,7 +57,8 @@ export async function POST(req: NextRequest) {
 
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
-      const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+      const rawEnd2 = (sub as unknown as { current_period_end?: number }).current_period_end;
+      const periodEnd = rawEnd2 ? new Date(rawEnd2 * 1000).toISOString() : null;
 
       await sb
         .from("subscriptions")

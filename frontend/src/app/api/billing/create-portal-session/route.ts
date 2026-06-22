@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2025-05-28.basil",
+  apiVersion: "2026-05-27.dahlia",
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
