@@ -26,7 +26,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "AutoQuote",
   description: "Automação de extração de cotações Vale — multi-tenant.",
-  icons: { icon: "/assets/logo.png" },
+  icons: { icon: "/assets/symbol-ink-amber-tail-1024.png" },
 };
 
 export default function RootLayout({

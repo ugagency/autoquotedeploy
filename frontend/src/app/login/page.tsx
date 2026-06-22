@@ -34,7 +34,7 @@ export default function LoginPage() {
         return;
       }
       router.refresh();
-      router.push("/");
+      router.push("/dashboard");
     } catch {
       setErro("Falha inesperada ao entrar");
     } finally {

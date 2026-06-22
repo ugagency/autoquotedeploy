@@ -67,10 +67,10 @@ export default function Sidebar({ userEmail, onOpenSettings }: Props) {
       {/* Navegação ------------------------------------------------ */}
       <nav className="flex-1 px-3 flex flex-col gap-1">
         <NavLink
-          href="/"
+          href="/dashboard"
           icon={<LayoutDashboard size={16} />}
           label="Dashboard"
-          active={pathname === "/"}
+          active={pathname === "/dashboard"}
         />
         <NavLink
           href="/analytics"
