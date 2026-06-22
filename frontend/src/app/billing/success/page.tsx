@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -8,6 +8,18 @@ import { createClient } from "@/utils/supabase/client";
 type Phase = "loading" | "logged-in" | "signup" | "done" | "error";
 
 export default function BillingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-bone dark:bg-carbon flex items-center justify-center">
+        <Loader2 size={28} className="text-amber animate-spin" />
+      </main>
+    }>
+      <BillingSuccessContent />
+    </Suspense>
+  );
+}
+
+function BillingSuccessContent() {
   const router = useRouter();
   const params = useSearchParams();
   const sessionId = params.get("session_id");
